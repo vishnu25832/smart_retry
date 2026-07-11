@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum DeliveryStatus {
+  PENDING
+  PROCESSING
+  DELIVERED
+  DEAD
+}
+
+model WebhookDelivery {
+  id            String         @id @default(uuid())
+  url           String
+  payload       String
+  headers       String?
+  status        DeliveryStatus @default(PENDING)
+
+  attemptCount  Int            @default(0)
+  nextRetryAt   DateTime
+
+  lastError     String?
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  logs          AttemptLog[]
+}
+
+model AttemptLog {
+  id            String          @id @default(uuid())
+
+  deliveryId    String
+  delivery      WebhookDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+
+  attemptNumber Int
+  statusCode    Int?
+  error         String?
+  responseBody  String?
+
+  createdAt     DateTime @default(now())
+}
